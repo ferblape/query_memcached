@@ -1,0 +1,5 @@
+= TODO
+
+  - unique method for getting cache_version_key given a table name
+  - nested SQL querys
+  - improve tests
