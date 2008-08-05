@@ -2,7 +2,38 @@
 
 http://github.com/ferblape/query_memcached
 
+== Requirements
+
+  - Rails >= 2.0.2
+  - memcache-client gem (maybe it will work also in memcached gem by fauna, see below)
+  - MySQL (I don't have tested this plugin in another DB Engine)
+
 == Description
+
+This plugin tries to replace ActiveRecord query_cache, adding a Memcache layer for persistence of the query's cache between requests. 
+
+It is, instead of saving all the SQL query's results in memory each request you save them into Memcached, so you have them all the time.
+
+For expiring this cache, each Memcached key contains a sumatory of all the version numbers of the tables involved in the query. If one of that tables is modified, then the version number for that table is increased.
+
+For example, the query below involves the table items and the table places:
+
+  SELECT * from items INNER JOIN places ON places.item_id = item.id WHERE (item.created_at >= '2008-02-02 00:00:00')
+
+The idea behind this is way of create and expire cache was inspired by the post The Secret to Memcached [http://blog.leetsoft.com/2007/5/22/the-secret-to-memcached] by Tobias Lütke.
+
+For this plugin to work it's supposed that you have the gem memcache-client installed and that your Memcached variable is called Cache. It's supposed to work also with memcached gem [http://github.com/dustin/memcached/tree/master] but I haven't tested it yet.
+
+== Problems
+
+The main problem nowadays is that it doesn't detect table names from nested querys. So if your application has nested SQL querys please, don't use this plugin.
+
+=== TODO
+
+There is a list of pending features, bugs, and so on in a file named TODO.
+
+Any comments and suggestions are welcome.
+
 
 
 Copyright (c) 2008 [Fernando Blat], released under the MIT license
