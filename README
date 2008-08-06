@@ -4,7 +4,7 @@ http://github.com/ferblape/query_memcached
 
 == Requirements
 
-  - Rails >= 2.0.2
+  - Rails >= 2.1
   - memcache-client gem (maybe it will work also in memcached gem by fauna, see below)
   - MySQL (I don't have tested this plugin in another DB Engine)
 
@@ -22,7 +22,7 @@ For example, the query below involves the table items and the table places:
 
 The idea behind this is way of create and expire cache was inspired by the post The Secret to Memcached [http://blog.leetsoft.com/2007/5/22/the-secret-to-memcached] by Tobias Lütke.
 
-For this plugin to work it's supposed that you have the gem memcache-client installed and that your Memcached variable is called Cache. It's supposed to work also with memcached gem [http://github.com/dustin/memcached/tree/master] but I haven't tested it yet.
+For this plugin to work it's supposed that your ActionController cache store configured is mem_cache_store. In not the plugin will not allow your application to start, raising an exception.
 
 == Problems
 
@@ -34,6 +34,14 @@ There is a list of pending features, bugs, and so on in a file named TODO.
 
 Any comments and suggestions are welcome.
 
+== Another comments
 
+It's so easy to adapt the plugin for Rails version 2.0.2 if you change the cache variable for another instantiated with the memcache-client.
+
+Also, it is possible to run in Rails >= 1.2.4 if you change the plugin query_cache [http://agilewebdevelopment.com/plugins/query_cache] with the changes of query_memcached.
+
+== Special Thanks
+
+  - Raul Murciano [http://raul.murciano.net/] for helping to adapt the plugin to Rails 2.1
 
 Copyright (c) 2008 [Fernando Blat], released under the MIT license

@@ -1,9 +1,9 @@
 require 'digest/md5'
 
-unless defined?(Cache)
-  warning = "[Query cache WARNING] Cache object is not defined"
-  puts warning
+unless defined?(Rails.cache) || Rails.cache.class.is_a?(ActiveSupport::Cache::MemCacheStore)
+  warning = "[Query memcached WARNING] Rails.cache is not defined or cache engine is not mem_cache_store"
   ActiveRecord::Base.logger.error warning
+  raise warning
 end 
 
 module ActiveRecord
@@ -22,7 +22,7 @@ module ActiveRecord
     end      
             
     def create_or_update_with_clean_query_cache(*args)
-      increase_version! if defined?(Cache)
+      increase_version! if defined?(Rails.cache)
       create_or_update_without_clean_query_cache(*args)
     end
 
@@ -31,13 +31,13 @@ module ActiveRecord
     def increase_version!
       # Increment the class version key number
       key = self.class.cache_version_key
-      if r = Cache.get(key).to_i
-        Cache.set(key,(r+1%10000000))
+      if r = Rails.cache.read(key).to_i
+        Rails.cache.write(key,(r+1%10000000))
       else
-        Cache.set(key,1)
+        Rails.cache.write(key,1)
       end
     end
-            
+
   end  
 end
 
@@ -51,7 +51,7 @@ module ActiveRecord
           base.class_eval do
             attr_accessor :query_cache_enabled
             alias_method_chain :columns, :query_cache
-            alias_method_chain :select_all, :query_cache                        
+            alias_method_chain :select_all, :query_cache
           end
 
           dirties_query_cache base, :insert, :update, :delete
@@ -116,9 +116,9 @@ module ActiveRecord
           columns_without_query_cache(*args)
         end
       end
-      
+
       private
-      
+
         def cache_sql(sql)
           # priority order:
           #  - if in @query_cache (memory of local app server) we prefer this
@@ -128,14 +128,14 @@ module ActiveRecord
             if @query_cache.has_key?(sql)
               log_info(sql, "CACHE", 0.0)
               @query_cache[sql]
-            elsif defined?(Cache) and cached_result = Cache.get(query_key(sql))
+            elsif defined?(Rails.cache) and cached_result = Rails.cache.read(query_key(sql))
               log_info(sql, "MEMCACHE", 0.0)
               @query_cache[sql] = cached_result
               cached_result
             else
               query_result = yield
               @query_cache[sql] = query_result
-              Cache.set(query_key(sql),query_result) if defined?(Cache)
+              Rails.cache.write(query_key(sql),query_result) if defined?(Rails.cache)
               query_result
             end
 
@@ -148,23 +148,21 @@ module ActiveRecord
           result
         end
         
-        # Transforms a sql query into a valid key for Memcache                
+        # Transforms a sql query into a valid key for Memcache
         def query_key(sql)
           table_names, clean_query = extract_table_names(sql)
           # version_number is the sum of the global version number and all the version number of each table
           version_number = get_cache_version
           table_names.each { |table_name| version_number += get_cache_version(table_name) }
-          
+
           # check if the result_key is short enough for memcache key length limit (250 char)
           result_key = "#{version_number}_#{clean_query}"          
-          if result_key.length + Cache.namespace.length + 1  >= 250 
-            result_key = "#{version_number}_#{Digest::MD5.hexdigest(clean_query)}"            
-          end
+          result_key = "#{version_number}_#{Digest::MD5.hexdigest(clean_query)}" if result_key.length + Rails.cache.instance_variable_get(:@data).namespace.length + 1 >= 250
           result_key
-        # rescue
-        #   raise TypeError
+        rescue
+          raise TypeError
         end
-                
+
         # Returns the cache version of a table_name. If table_name is empty its the global version
         # 
         # We prefer to search for this key first in memory and then in Memcache
@@ -173,20 +171,21 @@ module ActiveRecord
           key_class_version << "/#{table_name}" if table_name
           if @cache_version && @cache_version[key_class_version]
             @cache_version[key_class_version]
-          elsif version = Cache.get(key_class_version)
+          elsif version = Rails.cache.read(key_class_version)
             @cache_version[key_class_version] = version if @cache_version
             version
           else 
             @cache_version[key_class_version] = 0 if @cache_version
-            Cache.set(key_class_version, 0) or 0
+            Rails.cache.write(key_class_version, 0)
+            0
           end
         end
-        
+
         def extract_table_names(sql)
           table_names = []
           # strip all whitespaces in one whitespace
           # substitute whitespace for '_'
-          # remove '`'           
+          # remove '`'
           sql.gsub!(/`/,'')
           clean_query = sql.gsub(/[ ]+/,'_').gsub(/`/,'')
           selectors = /((WHERE|HAVING|LIMIT|ORDER BY|GROUP BY|ON).*)+/i
