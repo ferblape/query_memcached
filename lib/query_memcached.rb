@@ -28,6 +28,13 @@ module ActiveRecord
 
     alias_method_chain :create_or_update, :clean_query_cache
     
+    def destroy_with_clean_query_cache(*args)
+      increase_version! if defined?(Rails.cache)
+      destroy_without_clean_query_cache(*args)
+    end
+
+    alias_method_chain :destroy, :clean_query_cache
+    
     def increase_version!
       # Increment the class version key number
       key = self.class.cache_version_key
