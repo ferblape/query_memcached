@@ -2,6 +2,16 @@
 
 http://github.com/ferblape/query_memcached
 
+== Install
+
+In the root directory of your project:
+
+script/plugin install git://github.com/ferblape/query_memcached.git
+
+If you want to install it like a module you can follow this post, adapting the URLs to this plugin:
+
+http://woss.name/2008/04/09/using-git-submodules-to-track-vendorrails/
+
 == Requirements
 
   - Rails >= 2.1
