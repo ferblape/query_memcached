@@ -10,8 +10,7 @@ class QueryMemcachedTest < Test::Unit::TestCase
     private_methods = ActiveRecord::ConnectionAdapters::QueryCache.private_instance_methods    
     ActiveRecord::ConnectionAdapters::QueryCache.class_eval { public *private_methods }
     ActiveRecord::ConnectionAdapters::QueryCache.class_eval { module_function :extract_table_names }    
-    
-    
+        
     p  = "select * from countries"
     q  = "SELECT_*_FROM_countries_"
     p2 = "select * from ratings where (ratings.item_id = 36) AND (ratings.user_id = 11) LIMIT 1"
@@ -24,7 +23,9 @@ class QueryMemcachedTest < Test::Unit::TestCase
     q5 = "0_SELECT_count(*)_AS_count_all_FROM_places_INNER_JOIN_places_users_ON_places.id_=_places_users.place_id_WHERE_(place_id_=_3)_AND_(places_users.user_id_=_11_)_"
     p6 = "select * from items order by created_at DESC limit 10"
     q6 = "SELECT_*_FROM_items_ORDER_BY_created_at_DESC_LIMIT_10"
-    p7 = "SELECT * from countries where id IN (SELECT * from places where place_id = country.id)"
+    p7 = "SELECT * from countries where id IN (SELECT * from places where place_id = countries.id)"    
+    q8 = "9_SELECT_users.*_FROM_users_INNER_JOIN_contacts_ON_users.id_=_contacts.user_id_WHERE_((contacts.contact_id_=_1))_"
+    p8 = "SELECT users.* FROM users INNER JOIN contacts ON users.id = contacts.user_id WHERE ((contacts.contact_id = 1))"
     
     assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p).first,  ['countries']
     assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p2).first, ['ratings']
@@ -33,6 +34,7 @@ class QueryMemcachedTest < Test::Unit::TestCase
     assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p5).first, ['places', 'places_users']
     assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p6).first, ['items']
     assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p7).first, ['countries', 'places']
+    assert_equal ActiveRecord::ConnectionAdapters::QueryCache.extract_table_names(p8).first, ['users', 'contacts']
   end
   
 end

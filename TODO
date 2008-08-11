@@ -1,5 +1,4 @@
 = TODO
 
-	- nested SQL querys
   - unique method for getting cache_version_key given a table name
-  - improve tests: should they work independent of an application?
+  - improve tests: should they work independent of an application

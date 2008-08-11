@@ -16,6 +16,12 @@ module ActiveRecord
       end
     end
     
+    cattr_accessor :table_names
+    
+    self.table_names = []
+    ActiveRecord::Base.connection.execute('show tables').each { |t| self.table_names << t.first }    
+    self.table_names = /#{self.table_names.sort{ |a,b| b.length <=> a.length }.join('|')}/i
+    
     def cache_version_key
       return nil unless self.id      
       "version/#{self.class.table_name}/#{self.id}"
@@ -152,7 +158,7 @@ module ActiveRecord
             result.duplicable? ? result.dup : result
           end
         rescue TypeError
-          result
+          yield
         end
         
         # Transforms a sql query into a valid key for Memcache
@@ -189,29 +195,12 @@ module ActiveRecord
         end
 
         def extract_table_names(sql)
-          table_names = []
           # strip all whitespaces in one whitespace
           # substitute whitespace for '_'
           # remove '`'
           sql.gsub!(/`/,'')
           clean_query = sql.gsub(/[ ]+/,'_').gsub(/`/,'')
-          selectors = /((WHERE|HAVING|LIMIT|ORDER BY|GROUP BY|ON).*)+/i
-          matched = sql.scan(/from ([\w\d\_\-\, ]+) ?#{selectors}?$/i).first.first.gsub(/#{selectors}/,'').gsub(/(\w+) ?JOIN/i,'').strip
-          # if the from statment is multi-table
-          if matched.split(',').size > 1
-            matched.split(',').each do |table_name|
-              parts = table_name.strip.split(' ')
-              if parts.size > 1
-                table_names << parts.first.strip
-              else
-                table_names << table_name.strip
-              end
-            end
-          elsif 
-            matched.split(' ').each { |table_name| table_names << table_name.strip }
-          else
-            table_names << matched
-          end
+          table_names = sql.scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
           return table_names, clean_query
         end
 
