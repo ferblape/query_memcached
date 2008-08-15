@@ -9,51 +9,67 @@ end
 module ActiveRecord
     
   class Base
-    
-    class << self
-      def cache_version_key      
-        "version/#{self.table_name}" 
-      end
-    end
-    
+
+    # table_names is a special attribute that contains a regular expression with all the tables of the application 
+    # Its main purpose  is to detect all the tables that a query affects.
+    # It is build in a special way: 
+    #   - first we get all the tables
+    #   - then we sort them from major to minor lenght, in order to detect tables which name is a composition of two
+    #     names, i.e, posts, comments and comments_posts. It is for make easier the regular expression
+    #   - and finally, the regular expression is built
     cattr_accessor :table_names
     
     self.table_names = []
     ActiveRecord::Base.connection.execute('show tables').each { |t| self.table_names << t.first }    
     self.table_names = /#{self.table_names.sort{ |a,b| b.length <=> a.length }.join('|')}/i
     
-    def cache_version_key
-      return nil unless self.id      
-      "version/#{self.class.table_name}/#{self.id}"
-    end      
-            
     def create_or_update_with_clean_query_cache(*args)
-      increase_version! if defined?(::Rails.cache)
+      self.class.increase_version!
       create_or_update_without_clean_query_cache(*args)
     end
 
     alias_method_chain :create_or_update, :clean_query_cache
     
     def destroy_with_clean_query_cache(*args)
-      increase_version! if defined?(::Rails.cache)
+      self.class.increase_version!
       destroy_without_clean_query_cache(*args)
     end
 
     alias_method_chain :destroy, :clean_query_cache
-    
-    def increase_version!
-      # Increment the class version key number
-      key = self.class.cache_version_key
-      if r = ::Rails.cache.read(key).to_i
-        ::Rails.cache.write(key,(r+1%10000000))
-      else
-        ::Rails.cache.write(key,1)
+            
+    class << self
+      def cache_version_key      
+        "version/#{self.table_name}" 
       end
-    end
+      
+      def delete_all_with_clean_query_cache(*args)
+        increase_version!
+        delete_all_without_clean_query_cache(*args)
+      end
+
+      alias_method_chain :delete_all, :clean_query_cache      
+
+      def update_all_with_clean_query_cache(*args)
+        increase_version!
+        update_all_without_clean_query_cache(*args)
+      end
+
+      alias_method_chain :update_all, :clean_query_cache      
+      
+      def increase_version!
+        # Increment the class version key number
+        key = cache_version_key
+        if r = ::Rails.cache.read(key).to_i
+          ::Rails.cache.write(key,(r+1%10000000))
+        else
+          ::Rails.cache.write(key,1)
+        end
+      end
+      
+    end    
 
   end  
 end
-
 
 module ActiveRecord
   module ConnectionAdapters # :nodoc:
@@ -141,14 +157,14 @@ module ActiveRecord
             if @query_cache.has_key?(sql)
               log_info(sql, "CACHE", 0.0)
               @query_cache[sql]
-            elsif defined?(::Rails.cache) and cached_result = ::Rails.cache.read(query_key(sql))
+            elsif cached_result = ::Rails.cache.read(query_key(sql))
               log_info(sql, "MEMCACHE", 0.0)
               @query_cache[sql] = cached_result
               cached_result
             else
               query_result = yield
               @query_cache[sql] = query_result
-              ::Rails.cache.write(query_key(sql),query_result) if defined?(::Rails.cache)
+              ::Rails.cache.write(query_key(sql),query_result)
               query_result
             end
 
@@ -157,7 +173,7 @@ module ActiveRecord
           else
             result.duplicable? ? result.dup : result
           end
-        rescue TypeError
+        rescue
           yield
         end
         
@@ -170,10 +186,8 @@ module ActiveRecord
 
           # check if the result_key is short enough for memcache key length limit (250 char)
           result_key = "#{version_number}_#{clean_query}"          
-          result_key = "#{version_number}_#{Digest::MD5.hexdigest(clean_query)}" if result_key.length + ::Rails.cache.instance_variable_get(:@data).namespace.length + 1 >= 250
+          result_key = "#{version_number}_#{Digest::MD5.hexdigest(clean_query)}" if result_key.to_s.length + ::Rails.cache.instance_variable_get(:@data).namespace.length + 1 >= 250
           result_key
-        rescue
-          raise TypeError
         end
 
         # Returns the cache version of a table_name. If table_name is empty its the global version
@@ -194,12 +208,11 @@ module ActiveRecord
           end
         end
 
+        # Given a sql query this method extract all the table names of the database affected by the query
+        # thanks to the regular expression we have generated on the load of the plugin
         def extract_table_names(sql)
-          # strip all whitespaces in one whitespace
-          # substitute whitespace for '_'
-          # remove '`'
-          sql.gsub!(/`/,'')
-          clean_query = sql.gsub(/[ ]+/,'_').gsub(/`/,'')
+          sql.gsub!(/`/,'')          
+          clean_query = sql.gsub(/[ ]+/,'_').gsub(/`/,'').gsub(/\t/,'').gsub(/\n/,'').gsub(/\r/,'')
           table_names = sql.scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
           return table_names, clean_query
         end
