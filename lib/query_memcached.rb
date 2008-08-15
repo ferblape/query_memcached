@@ -17,11 +17,8 @@ module ActiveRecord
     #   - then we sort them from major to minor lenght, in order to detect tables which name is a composition of two
     #     names, i.e, posts, comments and comments_posts. It is for make easier the regular expression
     #   - and finally, the regular expression is built
-    cattr_accessor :table_names
-    
-    self.table_names = []
-    ActiveRecord::Base.connection.execute('show tables').each { |t| self.table_names << t.first }    
-    self.table_names = /#{self.table_names.sort{ |a,b| b.length <=> a.length }.join('|')}/i
+    cattr_accessor :table_names    
+    self.table_names = /#{connection.tables.sort{ |a,b| b.length <=> a.length }.join('|')}/i
     
     def create_or_update_with_clean_query_cache(*args)
       self.class.increase_version!
