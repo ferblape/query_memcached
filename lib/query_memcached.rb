@@ -169,8 +169,6 @@ module ActiveRecord
           else
             result.duplicable? ? result.dup : result
           end
-        #rescue
-        #  yield
         rescue TypeError
           result
         end
