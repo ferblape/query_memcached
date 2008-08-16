@@ -2,3 +2,7 @@
 
   - unique method for getting cache_version_key given a table name
   - improve tests: should they work independent of an application
+  - prevent race conditions [1], [2]
+
+[1] http://www.eu.socialtext.net/memcached/index.cgi?faq#race_conditions_and_stale_data
+[2] http://www.eu.socialtext.net/memcached/index.cgi?faq#emulating_locking_with_the_add_command

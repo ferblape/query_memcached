@@ -34,9 +34,9 @@ The idea behind this is way of create and expire cache was inspired by the post 
 
 For this plugin to work it's supposed that your ActionController cache store configured is mem_cache_store. In not the plugin will not allow your application to start, raising an exception.
 
-== Problems
+== Known issues
 
-The main problem nowadays is that it doesn't detect table names from nested querys. So if your application has nested SQL querys please, don't use this plugin.
+  - You can get race conditions in the version keys of tables stored in Memcached
 
 === TODO
 
