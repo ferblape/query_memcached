@@ -17,11 +17,8 @@ module ActiveRecord
     #   - then we sort them from major to minor lenght, in order to detect tables which name is a composition of two
     #     names, i.e, posts, comments and comments_posts. It is for make easier the regular expression
     #   - and finally, the regular expression is built
-    cattr_accessor :table_names
-    
-    self.table_names = []
-    ActiveRecord::Base.connection.execute('show tables').each { |t| self.table_names << t.first }    
-    self.table_names = /#{self.table_names.sort{ |a,b| b.length <=> a.length }.join('|')}/i
+    cattr_accessor :table_names    
+    self.table_names = /#{connection.tables.sort{ |a,b| b.length <=> a.length }.join('|')}/i
     
     def create_or_update_with_clean_query_cache(*args)
       self.class.increase_version!
@@ -60,7 +57,7 @@ module ActiveRecord
         # Increment the class version key number
         key = cache_version_key
         if r = ::Rails.cache.read(key).to_i
-          ::Rails.cache.write(key,(r+1%10000000))
+          ::Rails.cache.write(key, r + (1 % 10000000) )
         else
           ::Rails.cache.write(key,1)
         end
@@ -160,7 +157,6 @@ module ActiveRecord
             elsif cached_result = ::Rails.cache.read(query_key(sql))
               log_info(sql, "MEMCACHE", 0.0)
               @query_cache[sql] = cached_result
-              cached_result
             else
               query_result = yield
               @query_cache[sql] = query_result
@@ -173,21 +169,18 @@ module ActiveRecord
           else
             result.duplicable? ? result.dup : result
           end
-        rescue
-          yield
+        rescue TypeError
+          result
         end
         
         # Transforms a sql query into a valid key for Memcache
         def query_key(sql)
-          table_names, clean_query = extract_table_names(sql)
+          table_names = extract_table_names(sql)
           # version_number is the sum of the global version number and all the version number of each table
           version_number = get_cache_version
           table_names.each { |table_name| version_number += get_cache_version(table_name) }
 
-          # check if the result_key is short enough for memcache key length limit (250 char)
-          result_key = "#{version_number}_#{clean_query}"          
-          result_key = "#{version_number}_#{Digest::MD5.hexdigest(clean_query)}" if result_key.to_s.length + ::Rails.cache.instance_variable_get(:@data).namespace.length + 1 >= 250
-          result_key
+          "#{version_number}_#{Digest::MD5.hexdigest(sql)}"
         end
 
         # Returns the cache version of a table_name. If table_name is empty its the global version
@@ -212,12 +205,9 @@ module ActiveRecord
         # thanks to the regular expression we have generated on the load of the plugin
         def extract_table_names(sql)
           sql.gsub!(/`/,'')          
-          clean_query = sql.gsub(/[ ]+/,'_').gsub(/`/,'').gsub(/\t/,'').gsub(/\n/,'').gsub(/\r/,'')
-          table_names = sql.scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
-          return table_names, clean_query
+          sql.scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
         end
 
     end
   end
 end
-
