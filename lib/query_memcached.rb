@@ -44,19 +44,20 @@ module ActiveRecord
         delete_all_without_clean_query_cache(*args)
       end
 
-      alias_method_chain :delete_all, :clean_query_cache      
+      alias_method_chain :delete_all, :clean_query_cache
 
       def update_all_with_clean_query_cache(*args)
         increase_version!
         update_all_without_clean_query_cache(*args)
       end
 
-      alias_method_chain :update_all, :clean_query_cache      
+      alias_method_chain :update_all, :clean_query_cache
       
       def increase_version!
         # Increment the class version key number
         key = cache_version_key
         if r = ::Rails.cache.read(key).to_i
+          # FIXME: not so elegant
           ::Rails.cache.write(key, r + (1 % 10000000) )
         else
           ::Rails.cache.write(key,1)
@@ -204,8 +205,7 @@ module ActiveRecord
         # Given a sql query this method extract all the table names of the database affected by the query
         # thanks to the regular expression we have generated on the load of the plugin
         def extract_table_names(sql)
-          sql.gsub!(/`/,'')          
-          sql.scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
+          sql.gsub(/`/,'').scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
         end
 
     end
