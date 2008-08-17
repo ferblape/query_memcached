@@ -16,7 +16,7 @@ http://woss.name/2008/04/09/using-git-submodules-to-track-vendorrails/
 
   - Rails >= 2.1
   - memcache-client gem (maybe it will work also in memcached gem by fauna, see below)
-  - MySQL (I don't have tested this plugin in another DB Engine)
+  - MySQL (other adapters will not work until the execute method of adapter be redefined)
 
 == Description
 

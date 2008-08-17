@@ -19,43 +19,17 @@ module ActiveRecord
     #   - and finally, the regular expression is built
     cattr_accessor :table_names    
     self.table_names = /#{connection.tables.sort{ |a,b| b.length <=> a.length }.join('|')}/i
-        
-    def create_or_update_with_clean_query_cache(*args)
-      self.class.increase_version!
-      create_or_update_without_clean_query_cache(*args)
-    end
-    
-    alias_method_chain :create_or_update, :clean_query_cache
                     
-    def destroy_with_clean_query_cache(*args)
-      self.class.increase_version!
-      destroy_without_clean_query_cache(*args)
-    end
-
-    alias_method_chain :destroy, :clean_query_cache
-            
     class << self
-      def cache_version_key      
-        "version/#{self.table_name}" 
+      def cache_version_key(table_name = nil)
+        "version/#{table_name || self.table_name}" 
       end
       
-      def delete_all_with_clean_query_cache(*args)
-        increase_version!
-        delete_all_without_clean_query_cache(*args)
-      end
+      def global_cache_version_key; 'version' end
 
-      alias_method_chain :delete_all, :clean_query_cache
-
-      def update_all_with_clean_query_cache(*args)
-        increase_version!
-        update_all_without_clean_query_cache(*args)
-      end
-
-      alias_method_chain :update_all, :clean_query_cache
-      
-      def increase_version!
-        # Increment the class version key number
-        key = cache_version_key
+      # Increment the class version key number
+      def increase_version!(table_name = nil)
+        key = cache_version_key(table_name) 
         if r = ::Rails.cache.read(key).to_i
           # FIXME: not very elegant
           ::Rails.cache.write(key, r + (1 % 10000000) )
@@ -63,7 +37,7 @@ module ActiveRecord
           ::Rails.cache.write(key,1)
         end
       end
-      
+
     end    
 
   end  
@@ -71,6 +45,25 @@ end
 
 module ActiveRecord
   module ConnectionAdapters # :nodoc:
+    
+    # Only prepared for MySQL adapter
+    class MysqlAdapter < AbstractAdapter
+    
+      # alias_method_chain for expiring cache if necessary
+      def execute_with_clean_query_cache(*args)
+        sql = args[0].strip
+        if sql =~ /^(INSERT|UPDATE|ALTER|DROP|DELETE)/i
+          extract_table_names(sql).each do |table_name|        
+            ActiveRecord::Base.increase_version!(table_name)
+          end
+        end
+        execute_without_clean_query_cache(*args)
+      end
+      
+      alias_method_chain :execute, :clean_query_cache
+    
+    end
+    
     module QueryCache
       
       class << self
@@ -161,7 +154,7 @@ module ActiveRecord
             else
               query_result = yield
               @query_cache[sql] = query_result
-              ::Rails.cache.write(query_key(sql),query_result)
+              ::Rails.cache.write(query_key(sql), query_result)
               query_result
             end
 
@@ -188,8 +181,7 @@ module ActiveRecord
         # 
         # We prefer to search for this key first in memory and then in Memcache
         def get_cache_version(table_name = nil)
-          key_class_version = "version"
-          key_class_version << "/#{table_name}" if table_name
+          key_class_version = table_name ? ActiveRecord::Base.cache_version_key(table_name) : ActiveRecord::Base.global_cache_version_key
           if @cache_version && @cache_version[key_class_version]
             @cache_version[key_class_version]
           elsif version = ::Rails.cache.read(key_class_version)
