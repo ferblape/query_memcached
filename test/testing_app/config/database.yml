@@ -1,0 +1,11 @@
+database: &database
+  user: root
+  adapter: mysql
+  database: 'activerecord_unittest'
+  encoding: utf8
+
+development:
+  <<: *database
+ 
+test:
+  <<: *database
