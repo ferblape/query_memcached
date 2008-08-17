@@ -1,0 +1,22 @@
+= Running tests
+
+For testing this plugin I decided to adapt a big subset of ActiveRecord test suite in order to test if all those test run ok with the plugin activated.
+
+The main reason is because this plugin affects in a very deeper way the communication with the database. AR tests are very complete, and test everything concerned to the database: reads, updates, deletes, reads in relationships, creations through relations, etc
+
+That's why the test suite of this plugin is so different.
+
+First of all you have to know that there is a Rails 2.1 application in test/testing_application. This application contains a lot of models. AR test suite has been converted to the Unit Tests of this application.
+
+So you need a database as indicated in config/database.yml:
+
+  user: root
+  adapter: mysql
+  database: 'activerecord_unittest'
+  encoding: utf8
+
+Then, load the schema from db/schema.rb and run
+
+  rake test:units
+
+That's all.
