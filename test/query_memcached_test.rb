@@ -1,8 +1,5 @@
 require 'test/unit'
-require File.expand_path(File.join(File.dirname(__FILE__), '../../../../config/environment.rb'))
-
-class Item < ActiveRecord::Base
-end
+require File.expand_path(File.join(File.dirname(__FILE__), '/testing_app/config/environment.rb'))
 
 class QueryMemcachedTest < Test::Unit::TestCase
   

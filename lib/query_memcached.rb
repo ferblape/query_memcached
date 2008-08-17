@@ -19,14 +19,14 @@ module ActiveRecord
     #   - and finally, the regular expression is built
     cattr_accessor :table_names    
     self.table_names = /#{connection.tables.sort{ |a,b| b.length <=> a.length }.join('|')}/i
-    
+        
     def create_or_update_with_clean_query_cache(*args)
       self.class.increase_version!
       create_or_update_without_clean_query_cache(*args)
     end
-
-    alias_method_chain :create_or_update, :clean_query_cache
     
+    alias_method_chain :create_or_update, :clean_query_cache
+                    
     def destroy_with_clean_query_cache(*args)
       self.class.increase_version!
       destroy_without_clean_query_cache(*args)
@@ -57,7 +57,7 @@ module ActiveRecord
         # Increment the class version key number
         key = cache_version_key
         if r = ::Rails.cache.read(key).to_i
-          # FIXME: not so elegant
+          # FIXME: not very elegant
           ::Rails.cache.write(key, r + (1 % 10000000) )
         else
           ::Rails.cache.write(key,1)
