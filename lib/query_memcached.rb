@@ -4,68 +4,65 @@ unless defined?(::Rails.cache) || ::Rails.cache.class.is_a?(ActiveSupport::Cache
   warning = "[Query memcached WARNING] ::Rails.cache is not defined or cache engine is not mem_cache_store"
   ActiveRecord::Base.logger.error warning
   raise warning
-end 
+end
 
 module ActiveRecord
-    
   class Base
 
-    # table_names is a special attribute that contains a regular expression with all the tables of the application 
+    # table_names is a special attribute that contains a regular expression with all the tables of the application
     # Its main purpose  is to detect all the tables that a query affects.
-    # It is build in a special way: 
+    # It is build in a special way:
     #   - first we get all the tables
     #   - then we sort them from major to minor lenght, in order to detect tables which name is a composition of two
     #     names, i.e, posts, comments and comments_posts. It is for make easier the regular expression
     #   - and finally, the regular expression is built
-    cattr_accessor :table_names    
-    self.table_names = /#{connection.tables.sort{ |a,b| b.length <=> a.length }.join('|')}/i
-                    
+    cattr_accessor :table_names
+    self.table_names = /#{connection.tables.sort_by { |c| c.length }.join('|')}/i
+
     class << self
       def cache_version_key(table_name = nil)
-        "version/#{table_name || self.table_name}" 
+        "version/#{table_name || self.table_name}"
       end
-      
+
       def global_cache_version_key; 'version' end
 
       # Increment the class version key number
       def increase_version!(table_name = nil)
-        key = cache_version_key(table_name) 
-        if r = ::Rails.cache.read(key).to_i
-          # FIXME: not very elegant
-          ::Rails.cache.write(key, r + (1 % 10000000) )
+        key = cache_version_key(table_name)
+        if r = ::Rails.cache.read(key)
+          ::Rails.cache.write(key, r.to_i + 1)
         else
-          ::Rails.cache.write(key,1)
+          ::Rails.cache.write(key, 1)
         end
       end
+    end
 
-    end    
-
-  end  
+  end
 end
 
 module ActiveRecord
   module ConnectionAdapters # :nodoc:
-    
+
     # Only prepared for MySQL adapter
     class MysqlAdapter < AbstractAdapter
-    
+
       # alias_method_chain for expiring cache if necessary
       def execute_with_clean_query_cache(*args)
         sql = args[0].strip
         if sql =~ /^(INSERT|UPDATE|ALTER|DROP|DELETE)/i
-          extract_table_names(sql).each do |table_name|        
+          extract_table_names(sql).each do |table_name|
             ActiveRecord::Base.increase_version!(table_name)
           end
         end
         execute_without_clean_query_cache(*args)
       end
-      
+
       alias_method_chain :execute, :clean_query_cache
-    
+
     end
-    
+
     module QueryCache
-      
+
       class << self
         def included(base)
           base.class_eval do
@@ -122,7 +119,7 @@ module ActiveRecord
       end
 
       def select_all_with_query_cache(*args)
-        if @query_cache_enabled          
+        if @query_cache_enabled
           cache_sql(args.first) { select_all_without_query_cache(*args) }
         else
           select_all_without_query_cache(*args)
@@ -142,7 +139,7 @@ module ActiveRecord
         def cache_sql(sql)
           # priority order:
           #  - if in @query_cache (memory of local app server) we prefer this
-          #  - else if exists in Memcached we prefer that 
+          #  - else if exists in Memcached we prefer that
           #  - else perform query in database and save memory caches
           result =
             if @query_cache.has_key?(sql)
@@ -166,7 +163,7 @@ module ActiveRecord
         rescue TypeError
           result
         end
-        
+
         # Transforms a sql query into a valid key for Memcache
         def query_key(sql)
           table_names = extract_table_names(sql)
@@ -178,7 +175,7 @@ module ActiveRecord
         end
 
         # Returns the cache version of a table_name. If table_name is empty its the global version
-        # 
+        #
         # We prefer to search for this key first in memory and then in Memcache
         def get_cache_version(table_name = nil)
           key_class_version = table_name ? ActiveRecord::Base.cache_version_key(table_name) : ActiveRecord::Base.global_cache_version_key
@@ -187,7 +184,7 @@ module ActiveRecord
           elsif version = ::Rails.cache.read(key_class_version)
             @cache_version[key_class_version] = version if @cache_version
             version
-          else 
+          else
             @cache_version[key_class_version] = 0 if @cache_version
             ::Rails.cache.write(key_class_version, 0)
             0
@@ -197,7 +194,7 @@ module ActiveRecord
         # Given a sql query this method extract all the table names of the database affected by the query
         # thanks to the regular expression we have generated on the load of the plugin
         def extract_table_names(sql)
-          sql.gsub(/`/,'').scan(ActiveRecord::Base.table_names).map{ |t| t.strip}.uniq
+          sql.gsub(/`/,'').scan(ActiveRecord::Base.table_names).map {|t| t.strip}.uniq
         end
 
     end

@@ -2,7 +2,7 @@
 module ActiveSupport
   module Cache
     class MemCacheStore < Store
-   
+
       def lock(key, lock_expiry = 30, retries = 5)
         retries.times do |count|
 
@@ -17,15 +17,15 @@ module ActiveSupport
               value = yield( @data.get(key) )
               @data.set(key, value)
               return value
-            ensure 
+            ensure
               @data.delete("lock:#{key}")
             end
           else
             sleep((2**count) / 2.0)
           end
         end
-      end        
-      
+      end
+
     end
   end
-end      
+end
