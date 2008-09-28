@@ -6,7 +6,7 @@ The main reason is because this plugin affects in a very deeper way the communic
 
 That's why the test suite of this plugin is so different.
 
-First of all you have to know that there is a Rails 2.1 application in test/testing_application. This application contains a lot of models. AR test suite has been converted to the Unit Tests of this application.
+First of all you have to know that there is a Rails 2.1 application in test/testing_app. This application contains a lot of models. AR test suite has been converted to the Unit Tests of this application.
 
 So you need a database as indicated in config/database.yml:
 
