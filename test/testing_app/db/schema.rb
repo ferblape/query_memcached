@@ -17,8 +17,8 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   create_table "audit_logs", :force => true do |t|
-    t.string  "message",                    :default => "", :null => false
-    t.integer "developer_id", :limit => 11,                 :null => false
+    t.string  "message",                    :null => false
+    t.integer "developer_id", :limit => 11, :null => false
   end
 
   create_table "author_addresses", :force => true do |t|
@@ -30,7 +30,7 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   create_table "authors", :force => true do |t|
-    t.string  "name",                                  :default => "", :null => false
+    t.string  "name",                                  :null => false
     t.integer "author_address_id",       :limit => 11
     t.integer "author_address_extra_id", :limit => 11
   end
@@ -59,12 +59,13 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   create_table "booleantests", :force => true do |t|
-    t.integer "value", :limit => 11
+    t.boolean "value"
   end
 
   create_table "categories", :force => true do |t|
-    t.string "name", :default => "", :null => false
-    t.string "type"
+    t.string  "name",                                :null => false
+    t.string  "type"
+    t.integer "categorizations_count", :limit => 11
   end
 
   create_table "categories_posts", :id => false, :force => true do |t|
@@ -104,6 +105,7 @@ ActiveRecord::Schema.define(:version => 0) do
     t.string  "type"
     t.string  "ruby_type"
     t.integer "firm_id",   :limit => 11
+    t.string  "firm_name"
     t.string  "name"
     t.integer "client_of", :limit => 11
     t.integer "rating",    :limit => 11, :default => 1
@@ -115,7 +117,7 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   create_table "courses", :force => true do |t|
-    t.string "name", :default => "", :null => false
+    t.string "name"
   end
 
   create_table "customers", :force => true do |t|
@@ -149,8 +151,8 @@ ActiveRecord::Schema.define(:version => 0) do
   add_index "edges", ["source_id", "sink_id"], :name => "unique_edge_index", :unique => true
 
   create_table "entrants", :force => true do |t|
-    t.string  "name",                    :default => "", :null => false
-    t.integer "course_id", :limit => 11,                 :null => false
+    t.string  "name",                    :null => false
+    t.integer "course_id", :limit => 11, :null => false
   end
 
   create_table "fk_test_has_fk", :force => true do |t|
@@ -171,9 +173,21 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   create_table "inept_wizards", :force => true do |t|
-    t.string "name", :default => "", :null => false
-    t.string "city", :default => "", :null => false
+    t.string "name", :null => false
+    t.string "city", :null => false
     t.string "type"
+  end
+
+  create_table "integer_limits", :force => true do |t|
+    t.integer "c_int_without_limit", :limit => 11
+    t.integer "c_int_1",             :limit => 4
+    t.integer "c_int_2",             :limit => 6
+    t.integer "c_int_3",             :limit => 9
+    t.integer "c_int_4",             :limit => 11
+    t.integer "c_int_5",             :limit => 20
+    t.integer "c_int_6",             :limit => 20
+    t.integer "c_int_7",             :limit => 20
+    t.integer "c_int_8",             :limit => 20
   end
 
   create_table "items", :force => true do |t|
@@ -313,8 +327,8 @@ ActiveRecord::Schema.define(:version => 0) do
 
   create_table "posts", :force => true do |t|
     t.integer "author_id",      :limit => 11
-    t.string  "title",                        :default => "", :null => false
-    t.text    "body",                                         :null => false
+    t.string  "title",                                       :null => false
+    t.text    "body",                                        :null => false
     t.string  "type"
     t.integer "comments_count", :limit => 11, :default => 0
     t.integer "taggings_count", :limit => 11, :default => 0
