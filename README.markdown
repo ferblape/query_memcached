@@ -17,7 +17,7 @@ If you want to install it like a git module you can follow this post, adapting t
   - Ruby >= 1.8.5
   - Rails >= 2.1
   - memcache-client gem (maybe it will work also in memcached gem by fauna, but I haven't tested it yet)
-  - MySQL (other adapters will not work until the execute method of adapter be redefined)
+  - MySQL or PostgreSQL
 
 ## Description
 

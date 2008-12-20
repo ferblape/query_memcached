@@ -16,12 +16,18 @@ module ActiveRecord
     #   - then we sort them from major to minor lenght, in order to detect tables which name is a composition of two
     #     names, i.e, posts, comments and comments_posts. It is for make easier the regular expression
     #   - and finally, the regular expression is built
-    cattr_accessor :table_names
+    cattr_accessor :table_names, :enableMemcacheQueryForModels
     self.table_names = /#{connection.tables.sort_by { |c| c.length }.join('|')}/i
 
     class << self
+      
+      
+      # TODO: put this class method at the top of your AR model to enable memcache for the queryCache
+      def enable_memache_queryCache
+      end
+      
       def cache_version_key(table_name = nil)
-        "version/#{table_name || self.table_name}"
+        "#{global_cache_version_key}/#{table_name || self.table_name}"
       end
 
       def global_cache_version_key; 'version' end
@@ -48,10 +54,25 @@ module ActiveRecord
 
   module ConnectionAdapters # :nodoc:
 
-    # Only prepared for MySQL adapter
     class MysqlAdapter < AbstractAdapter
       
       # alias_method_chain for expiring cache if necessary
+      def execute_with_clean_query_cache(*args)
+        return execute_without_clean_query_cache(*args) unless query_cache_enabled
+        sql = args[0].strip
+        if sql =~ /^(INSERT|UPDATE|ALTER|DROP|DELETE)/i
+          table_name = ActiveRecord::Base.extract_table_names(sql).first
+          ActiveRecord::Base.increase_version!(table_name)
+        end
+        execute_without_clean_query_cache(*args)
+      end
+
+      alias_method_chain :execute, :clean_query_cache
+      
+    end
+    
+    class PostgreSQLAdapter < AbstractAdapter
+
       def execute_with_clean_query_cache(*args)
         sql = args[0].strip
         if sql =~ /^(INSERT|UPDATE|ALTER|DROP|DELETE)/i
@@ -61,36 +82,10 @@ module ActiveRecord
         end
         execute_without_clean_query_cache(*args)
       end
-
       alias_method_chain :execute, :clean_query_cache
-      
     end
+    
     module QueryCache
-
-      class << self
-        def included(base)
-          base.class_eval do
-            attr_accessor :query_cache_enabled
-            alias_method_chain :columns, :query_cache
-            alias_method_chain :select_all, :query_cache
-          end
-
-          dirties_query_cache base, :insert, :update, :delete
-        end
-
-        def dirties_query_cache(base, *method_names)
-          method_names.each do |method_name|
-            base.class_eval <<-end_code, __FILE__, __LINE__
-              def #{method_name}_with_query_dirty(*args)
-                clear_query_cache if @query_cache_enabled
-                #{method_name}_without_query_dirty(*args)
-              end
-
-              alias_method_chain :#{method_name}, :query_dirty
-            end_code
-          end
-        end
-      end
 
       # Enable the query cache within the block
       def cache
@@ -103,13 +98,6 @@ module ActiveRecord
         @query_cache_enabled = old
       end
 
-      # Disable the query cache within the block.
-      def uncached
-        old, @query_cache_enabled = @query_cache_enabled, false
-        yield
-      ensure
-        @query_cache_enabled = old
-      end
 
       # Clears the query cache.
       #
@@ -120,22 +108,6 @@ module ActiveRecord
       def clear_query_cache
         @query_cache.clear if @query_cache
         @cache_version.clear if @cache_version
-      end
-
-      def select_all_with_query_cache(*args)
-        if @query_cache_enabled
-          cache_sql(args.first) { select_all_without_query_cache(*args) }
-        else
-          select_all_without_query_cache(*args)
-        end
-      end
-
-      def columns_with_query_cache(*args)
-        if @query_cache_enabled
-          @query_cache["SHOW FIELDS FROM #{args.first}"] ||= columns_without_query_cache(*args)
-        else
-          columns_without_query_cache(*args)
-        end
       end
 
       private
