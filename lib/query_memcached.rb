@@ -36,6 +36,8 @@ module ActiveRecord
         end
       end
       
+      # Given a sql query this method extract all the table names of the database affected by the query
+      # thanks to the regular expression we have generated on the load of the plugin
       def extract_table_names(sql)
         sql.gsub(/`/,'').scan(self.table_names).map {|t| t.strip}.uniq
       end
@@ -192,12 +194,6 @@ module ActiveRecord
             0
           end
         end
-
-        # # Given a sql query this method extract all the table names of the database affected by the query
-        # # thanks to the regular expression we have generated on the load of the plugin
-        # def extract_table_names(sql)
-        #   sql.gsub(/`/,'').scan(ActiveRecord::Base.table_names).map {|t| t.strip}.uniq
-        # end
 
     end
     
