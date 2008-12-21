@@ -48,23 +48,23 @@ class << ActiveRecord::Base
   public :with_scope, :with_exclusive_scope
 end
 
-module Test
-  module Unit
-    class TestCase
-      
-
-      def run_with_query_memcached(*args, &block)
-        Rails.cache.clear
-        ActiveRecord::Base.cache do 
-          run_without_query_memcached(*args, &block)
-        end
-      end
-
-      alias_method_chain :run, :query_memcached
-
-    end
-  end
-end
+# module Test
+#   module Unit
+#     class TestCase
+#       
+# 
+#       def run_with_query_memcached(*args, &block)
+#         Rails.cache.clear
+#         ActiveRecord::Base.cache do 
+#           run_without_query_memcached(*args, &block)
+#         end
+#       end
+# 
+#       alias_method_chain :run, :query_memcached
+# 
+#     end
+#   end
+# end
 
 class Test::Unit::TestCase
   # Transactional fixtures accelerate your tests by wrapping each test method

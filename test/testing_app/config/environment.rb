@@ -11,7 +11,10 @@ Rails::Initializer.run do |config|
   config.cache_classes = false
   config.whiny_nils = true
   config.action_controller.perform_caching = true
-  config.cache_store = :test_store
+  config.cache_store = :mem_cache_store, { :servers => 'localhost:11211',
+                                           :namespace => 'testing_app',
+                                           :compression => true
+                                         }
 end
 
 require File.expand_path(File.dirname(__FILE__)) + "/../../../lib/query_memcached"
