@@ -46,9 +46,11 @@ You need to add `_enable_memache_querycache_` to your AcitveRecord model, like s
 
 <code>
   class User < ActiveRecord::Base
-    enable_memcache_querycache
+    enable_memcache_querycache 10.minutes
   end
 </code>
+
+Additionally you can indicate in what time should expire the cache. 90 minutes is the default value.
 
 The reason for this (drastic) change is two fold:
 
