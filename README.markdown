@@ -46,7 +46,7 @@ You need to add `_enable_memache_querycache_` to your AcitveRecord model, like s
 
 <code>
   class User < ActiveRecord::Base
-    enable_memcache_querycache 10.minutes
+    enable_memcache_querycache :expires_in => 10.minutes
   end
 </code>
 
