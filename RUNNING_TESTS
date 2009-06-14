@@ -11,5 +11,8 @@ So you need a database as indicated in `config/database.yml`:
   database: 'activerecord_unittest'
   encoding: utf8
   
-Then, load the schema from `db/schema.rb`
+Then, load the schema from `db/schema.rb`, and launch a memcache server in standar port 11211.
 
+Now, you can go to the plugin root directory and perform the test task:
+
+  rake test
