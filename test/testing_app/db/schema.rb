@@ -180,14 +180,14 @@ ActiveRecord::Schema.define(:version => 0) do
 
   create_table "integer_limits", :force => true do |t|
     t.integer "c_int_without_limit", :limit => 11
-    t.integer "c_int_1",             :limit => 4
-    t.integer "c_int_2",             :limit => 6
-    t.integer "c_int_3",             :limit => 9
+    t.integer "c_int_1",             :limit => 11
+    t.integer "c_int_2",             :limit => 20
+    t.integer "c_int_3",             :limit => 11
     t.integer "c_int_4",             :limit => 11
-    t.integer "c_int_5",             :limit => 20
-    t.integer "c_int_6",             :limit => 20
-    t.integer "c_int_7",             :limit => 20
-    t.integer "c_int_8",             :limit => 20
+    t.integer "c_int_5",             :limit => 11
+    t.integer "c_int_6",             :limit => 11
+    t.integer "c_int_7",             :limit => 11
+    t.integer "c_int_8",             :limit => 11
   end
 
   create_table "items", :force => true do |t|
@@ -264,8 +264,8 @@ ActiveRecord::Schema.define(:version => 0) do
   create_table "numeric_data", :force => true do |t|
     t.decimal "bank_balance",                              :precision => 10, :scale => 2
     t.decimal "big_bank_balance",                          :precision => 15, :scale => 2
-    t.integer "world_population",            :limit => 10
-    t.integer "my_house_population",         :limit => 2
+    t.integer "world_population",            :limit => 11
+    t.integer "my_house_population",         :limit => 6
     t.decimal "decimal_number_with_default",               :precision => 3,  :scale => 2, :default => 2.78
   end
 

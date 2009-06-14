@@ -1,20 +1,15 @@
 = Running tests
 
-For testing this plugin I decided to adapt a the query cache tests from ActiveRecord. 
+For testing this plugin I decided to adapt a the query cache tests' from ActiveRecord. 
 
-First of all you have to know that there is a Rails 2.1 application in test/testing_app. This application contains a lot of models. AR test suite has been converted to the Unit Tests of this application.
+First of all you have to know that there is a Rails 2.1 application in `test/testing_app`.
 
-So you need a database as indicated in config/database.yml:
+So you need a database as indicated in `config/database.yml`:
 
   user: root
   adapter: mysql
   database: 'activerecord_unittest'
   encoding: utf8
   
-And also a memcached running in the standar port (11211).
+Then, load the schema from `db/schema.rb`
 
-Then, load the schema from db/schema.rb and run
-
-  rake test:units
-
-That's all.
