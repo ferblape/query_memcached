@@ -14,9 +14,9 @@ If you want to install it like a git module you can follow this post, adapting t
 
 ## Requirements
 
-  - Ruby >= 1.8.4
+  - 1.9 >= Ruby >= 1.8.4
   
-  - Rails >= 2.1
+  - 2.2.2 >= Rails >= 2.1 
   
   - memcache-client gem (maybe it will work also in memcached gem by fauna, but I haven't tested it yet)
   
